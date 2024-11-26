@@ -1,5 +1,4 @@
 import { Schema, model, models } from "mongoose";
-import { string } from "zod";
 
 const userSchema = new Schema({
     name: {

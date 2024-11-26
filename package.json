@@ -13,18 +13,22 @@
   "description": "",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/mongoose": "^5.11.96",
+    "@types/multer": "^1.4.12",
     "typescript": "^5.7.2"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.2",
+    "multer": "^1.4.5-lts.1",
     "zod": "^3.23.8"
   }
 }

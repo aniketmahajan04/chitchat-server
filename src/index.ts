@@ -1,20 +1,23 @@
 import express from "express";
-import mongoose from "mongoose";
 import { PORT, MONGO_URL } from "./config/config";
-import  userRouter  from "./routes/user"
+import  userRouter  from "./routes/userRouter"
+import { connectDB } from "./utils/features";
+
 
 const app = express()
 app.use(express.json());
 
+// Check if MONGO_URL is defined
+if (!MONGO_URL) {
+    throw new Error("MONGO_URL is not defined in the environment variables");
+}
+
+connectDB(MONGO_URL);
+
 app.use("/api/v1/user", userRouter);
 
-async function main() {
-    if(!MONGO_URL){
-        throw new Error("MONGO_URL is not defined");
-    }
-    await mongoose.connect(MONGO_URL)
-}
 
 app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
 })
+
