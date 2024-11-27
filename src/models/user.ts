@@ -1,7 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
 const userSchema = new Schema({
-    name: {
+    email: {
         type: String,
         required: true
     },
@@ -13,16 +13,15 @@ const userSchema = new Schema({
     password: {
         type: String,
         required: true,
-        select: false
     },
     avatar: {
         public_id: {
             type: String,
-            required: true,
+            default: "default-avatar-id"
         },
         url: {
             type: String,
-            required: true,
+            default: "/uploads/default-avatar.png"
         }
     }
 },
