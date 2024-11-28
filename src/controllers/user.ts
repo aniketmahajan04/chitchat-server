@@ -11,14 +11,12 @@ export const newUser = async (req: Request, res: Response) => {
 
     try{
         const hashedPassword = await bcrypt.hash(password, 5)
-        console.log(hashedPassword);
-
+       
         await UserModel.create({
             email: email,
             username: username,
             password: hashedPassword
         });
-        console.log("user created with password ", hashedPassword)
         res.status(201).json({ msg: "user signup successfully" });
 
     } catch(error) {
@@ -31,18 +29,14 @@ export const newUser = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response): Promise<void> => {
     
     const { email, username, password } = req.body;
-    console.log(req.body);
     try{
         const foundUser = await UserModel.findOne({
             email: email,
             username: username,
         });
         
-        console.log(foundUser);
-
         if(foundUser){
-            console.log(password);
-            console.log(foundUser.password);
+        
             const isMatch = await bcrypt.compare(password, foundUser.password)
 
             if(!isMatch){
@@ -75,4 +69,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
 };
+
+
 
