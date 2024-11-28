@@ -3,8 +3,6 @@ import * as jwt from "jsonwebtoken";
 import { Request, Response } from "express"
 import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
-import { string } from "zod";
-
 
 export const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -72,7 +70,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 interface AuthenticatedRequest extends Request {
-
         userId?: string;
 };
 
@@ -114,5 +111,13 @@ export const updateDetails = async (req: AuthenticatedRequest, res: Response): P
         })
     };
 
+};
+
+export const logout = (req: Request, res: Response) => {
+    res.clearCookie('token');
+    res.status(200).json({
+        msg: "Logged out successfully",
+    })
 }
+
 
