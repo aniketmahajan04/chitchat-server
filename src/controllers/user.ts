@@ -1,11 +1,12 @@
 import bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
-import { Request, Response } from "express-serve-static-core"
+import { Request, Response } from "express"
 import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
+import { string } from "zod";
 
 
-export const newUser = async (req: Request, res: Response) => {
+export const newUser = async (req: Request, res: Response): Promise<void> => {
 
     const { email, username, password } = req.body;
 
@@ -70,5 +71,48 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
 };
 
+interface AuthenticatedRequest extends Request {
 
+        userId?: string;
+};
+
+export const updateDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.userId;
+    const { email, username } = req.body;
+
+    if(!userId) {
+        res.status(400).json({ msg: "Unauthoorized: User Id is missing" });
+        return;
+    }
+
+    if(!email || !username) {
+        res.status(400).json({ msg: "Both email and username are required" });
+        return;
+    }
+
+    try{
+        const updatedUser = await UserModel.findByIdAndUpdate(
+            userId,
+            { $set: { email, username } },
+            { new: true },
+        );
+
+        if (!updatedUser) {
+            res.status(404).json({ msg: "User not found" });
+            return;
+        }
+
+        res.status(200).json({
+            msg: "Profile update successfully",
+            updatedUser: updatedUser
+        })
+        
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        })
+    };
+
+}
 
