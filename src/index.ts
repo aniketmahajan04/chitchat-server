@@ -4,11 +4,13 @@ import { PORT, MONGO_URL } from "./config/config";
 import  userRouter  from "./routes/userRouter"
 import  uploadRouter  from "./routes/uploadRouter"
 import { connectDB } from "./utils/features";
+import path from "path";
 
 
 const app = express()
 app.use(express.json());
 app.use(cookieParser());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Check if MONGO_URL is defined
 if (!MONGO_URL) {

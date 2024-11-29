@@ -1,21 +1,19 @@
 import { NextFunction, Request, Response, RequestHandler } from "express";
-import { z } from "zod";
+import { ZodSchema } from "zod";
 
-export const zodValidation: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
-    const requiredBody = z.object({
-        email: z.string().email().min(10),
-        username: z.string().min(3).max(20),
-        password: z.string().min(3).max(20),
-    });
+export const zodValidation = (schema: ZodSchema) => {
+    return (req: Request, res: Response, next: NextFunction): void => {
+        const parsedDataWithSuccess = schema.safeParse(req.body);
 
-    const parsedDataWithSuccess = requiredBody.safeParse(req.body);
+        if(!parsedDataWithSuccess.success){
+            res.status(400).json({
+                msg: "Validation error",
+                errors: parsedDataWithSuccess.error.errors,
+            });
+            return;
+        }
 
-    if(!parsedDataWithSuccess.success){
-        res.status(400).json({
-            msg: "Incorrect Format",
-            error: parsedDataWithSuccess.error.errors
-        });
-        return;
-    }
-    next();
-}
+        next();
+    };
+};
+

@@ -8,21 +8,34 @@ export const newUser = async (req: Request, res: Response): Promise<void> => {
 
     const { email, username, password } = req.body;
 
+    const defaultAvatar = {
+        public_id: "default-avatar",    // the identifier can be anything unique for the image
+        url: "/uploads/default-avatar.png", 
+    };
+    
+    const avatar = req.file ? {
+        public_id: req.file.filename,
+        url: `/uploads/${req.file.filename}`
+    } : defaultAvatar;
+
     try{
         const hashedPassword = await bcrypt.hash(password, 5)
        
-        await UserModel.create({
+        const newUser = await UserModel.create({
             email: email,
             username: username,
-            password: hashedPassword
+            password: hashedPassword,
+            avatar: avatar,
         });
-        res.status(201).json({ msg: "user signup successfully" });
+        res.status(201).json({ 
+            msg: "user signup successfully",
+            user: newUser
+         });
 
     } catch(error) {
         console.error("something went wrong", error);
+        res.status(500).json({ msg: "Internal server error, please try again" });
     }
-
-
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
