@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { login, newUser, updateDetails, logout } from "../controllers/user";
+import { login, newUser, updateDetails, logout, getMyProfile } from "../controllers/user";
 import { auth } from "../middlewares/auth";
 import { zodValidation } from "../middlewares/zod";
 import { userSignupSchema } from "../lib/validators";
@@ -11,5 +11,6 @@ userRouter.post("/signup", avatar, zodValidation(userSignupSchema), newUser);
 userRouter.post("/login", login);
 userRouter.put("/updatedetails", auth, updateDetails);
 userRouter.delete("/logout", auth, logout);
+userRouter.get("/getmyprofile", auth, getMyProfile)
 
 export default userRouter;

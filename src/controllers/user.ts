@@ -91,7 +91,7 @@ export const updateDetails = async (req: AuthenticatedRequest, res: Response): P
     const { email, username } = req.body;
 
     if(!userId) {
-        res.status(400).json({ msg: "Unauthoorized: User Id is missing" });
+        res.status(400).json({ msg: "Unauthorized: User Id is missing" });
         return;
     }
 
@@ -131,6 +131,40 @@ export const logout = (req: Request, res: Response) => {
     res.status(200).json({
         msg: "Logged out successfully",
     })
-}
+};
+
+export const getMyProfile = async (req: AuthenticatedRequest , res: Response): Promise<void> => {
+   const userId = req.userId;
+
+   if(!userId) {
+    res.status(400).json({ msg: "Unauthorized: User Id is missing" });
+    return;
+    }
+
+   try{
+        const user = await UserModel.findById(userId);
+
+        if(!user) {
+            res.status(404).json({
+                msg: "User not found"
+            });
+            return;
+        }
+
+        const { email, username, avatar } = user;
+
+        res.status(200).json({
+            email,
+            username,
+            avatar
+        });
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+            res.status(500).json({
+                msg: "Internal server error"
+            });
+   }
+};
 
 

@@ -2,7 +2,6 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { PORT, MONGO_URL } from "./config/config";
 import  userRouter  from "./routes/userRouter"
-import  uploadRouter  from "./routes/uploadRouter"
 import { connectDB } from "./utils/features";
 import path from "path";
 
@@ -20,7 +19,6 @@ if (!MONGO_URL) {
 connectDB(MONGO_URL);
 
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/upload", uploadRouter);
 
 
 app.listen(PORT, () => {
