@@ -4,7 +4,7 @@ import { Request, Response } from "express"
 import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
 
-export const newUser = async (req: Request, res: Response): Promise<void> => {
+const newUser = async (req: Request, res: Response): Promise<void> => {
 
     const { email, username, password } = req.body;
 
@@ -38,7 +38,7 @@ export const newUser = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+const login = async (req: Request, res: Response): Promise<void> => {
     
     const { email, username, password } = req.body;
     try{
@@ -86,7 +86,7 @@ interface AuthenticatedRequest extends Request {
         userId?: string;
 };
 
-export const updateDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+const updateDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
     const { email, username } = req.body;
 
@@ -126,14 +126,14 @@ export const updateDetails = async (req: AuthenticatedRequest, res: Response): P
 
 };
 
-export const logout = (req: Request, res: Response) => {
+const logout = (req: Request, res: Response) => {
     res.clearCookie('token');
     res.status(200).json({
         msg: "Logged out successfully",
     })
 };
 
-export const getMyProfile = async (req: AuthenticatedRequest , res: Response): Promise<void> => {
+const getMyProfile = async (req: AuthenticatedRequest , res: Response): Promise<void> => {
    const userId = req.userId;
 
    if(!userId) {
@@ -167,4 +167,50 @@ export const getMyProfile = async (req: AuthenticatedRequest , res: Response): P
    }
 };
 
+const userSearch = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
 
+    const userId = req.userId;
+
+    const { username } = req.body;
+
+    if(!userId) {
+        res.status(404).json({
+            msg: "Unauthorized please login first"
+        });
+        return;
+    }
+
+    try{
+
+        const searchUser = await UserModel.findOne({
+            username,
+        });
+
+        if(!searchUser){
+            res.status(404).json({
+                msg: "User not found"
+            });
+            return;
+        }
+
+        res.status(200).json({
+            searchUser,
+        });
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg:" Internal server error"
+        });
+    }
+
+};
+
+export {
+    newUser,
+    login,
+    updateDetails,
+    getMyProfile,
+    logout,
+    userSearch,
+}

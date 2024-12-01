@@ -1,5 +1,12 @@
 import { Router } from "express";
-import { login, newUser, updateDetails, logout, getMyProfile } from "../controllers/user";
+import { 
+    login,
+    newUser,
+    updateDetails,
+    logout,
+    getMyProfile,
+    userSearch,
+} from "../controllers/user";
 import { auth } from "../middlewares/auth";
 import { zodValidation } from "../middlewares/zod";
 import { userSignupSchema } from "../lib/validators";
@@ -9,8 +16,12 @@ const userRouter = Router();
 
 userRouter.post("/signup", avatar, zodValidation(userSignupSchema), newUser);
 userRouter.post("/login", login);
-userRouter.put("/updatedetails", auth, updateDetails);
-userRouter.delete("/logout", auth, logout);
-userRouter.get("/getmyprofile", auth, getMyProfile)
+
+userRouter.use(auth);
+
+userRouter.put("/updatedetails", updateDetails);
+userRouter.delete("/logout", logout);
+userRouter.get("/getmyprofile", getMyProfile);
+userRouter.get("/search", userSearch);
 
 export default userRouter;
