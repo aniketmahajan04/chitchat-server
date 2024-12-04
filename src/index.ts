@@ -4,6 +4,7 @@ import { PORT, MONGO_URL } from "./config/config";
 import  userRouter  from "./routes/userRouter"
 import { connectDB } from "./utils/features";
 import path from "path";
+import chatRouter from "./routes/chatRouter";
 
 
 const app = express()
@@ -19,6 +20,7 @@ if (!MONGO_URL) {
 connectDB(MONGO_URL);
 
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/chat", chatRouter);
 
 
 app.listen(PORT, () => {

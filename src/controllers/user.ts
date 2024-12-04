@@ -3,6 +3,7 @@ import * as jwt from "jsonwebtoken";
 import { Request, Response } from "express"
 import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
+import { AuthenticatedRequest } from "../middlewares/auth";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -82,9 +83,6 @@ const login = async (req: Request, res: Response): Promise<void> => {
 
 };
 
-interface AuthenticatedRequest extends Request {
-        userId?: string;
-};
 
 const updateDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
@@ -171,7 +169,7 @@ const userSearch = async (req: AuthenticatedRequest, res: Response): Promise<voi
 
     const userId = req.userId;
 
-    const { username } = req.body;
+    const { username } = req.query;
 
     if(!userId) {
         res.status(404).json({
@@ -182,8 +180,8 @@ const userSearch = async (req: AuthenticatedRequest, res: Response): Promise<voi
 
     try{
 
-        const searchUser = await UserModel.findOne({
-            username,
+        const searchUser = await UserModel.find({
+            username: { $regex: username, $option: "i" }
         });
 
         if(!searchUser){
