@@ -1,7 +1,9 @@
 import { ChatModel } from "../models/chat";
-import { Request, Response } from "express";
+import { Response } from "express";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { UserModel } from "../models/user";
+import { getOtherMember } from "../lib/helper";
+import { Chat, TransformedChat } from "../interfaces/chat.interface";
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
@@ -102,9 +104,55 @@ const newGroupChat = async (req : AuthenticatedRequest, res: Response): Promise<
             msg: "Internal server error"
         });
     }
-}
+};
+
+const getMyChats = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.userId;
+    
+    if(!userId){
+        res.status(401).json({ msg: "Unauthorized" });
+        return;
+    }
+
+    try{
+        const chats: Chat[] = await ChatModel.find({ members: userId }).populate(
+            "members",
+            "name username avatar"
+        );
+
+        const transformedChat: TransformedChat[] = chats.map(({ _id, name, groupChat, members }) => {
+            const otherMember = getOtherMember(members, userId);
+
+            return {
+                _id,
+                groupChat,
+                avatar: groupChat
+                    ? members.slice(0, 3).map(({ avatar }) => avatar.url)
+                    : [otherMember?.avatar.url || ""],
+                name: groupChat ? name : otherMember?.name || "Unknown",
+                members: members.reduce<string[]>((prev, curr) => {
+                    if(curr._id.toString() !== userId.toString()){
+                        prev.push(curr._id);
+                    }
+                    return prev;
+                }, []),
+            };
+        });
+        res.status(201).json({
+            success: true,
+            transformedChat
+        });
+        
+    } catch(error){
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
 
 export {
     newChat,
     newGroupChat,
+    getMyChats
 }
