@@ -3,7 +3,8 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { UserModel } from "../models/user";
 import { getOtherMember } from "../lib/helper";
-import { Chat, TransformedChat } from "../interfaces/chat.interface";
+import { Chat, Member, TransformedChat } from "../interfaces/chat.interface";
+
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
@@ -151,8 +152,38 @@ const getMyChats = async (req: AuthenticatedRequest, res: Response): Promise<voi
     }
 };
 
+const getMyGroups = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const chats = await ChatModel.find({
+            groupChat: true,
+            creator: req.userId
+        }).populate(
+            "members", "name avatar"
+        );
+
+        const groups = chats.map(({members, _id, groupChat,name}: any) => ({
+            _id,
+            groupChat,
+            name,
+            avatar: (members as Member[]).slice(0, 3).map(({avatar}) => avatar.url)
+        }))
+
+        res.status(201).json({
+            success: true,
+            groups
+        })
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
-    getMyChats
+    getMyChats,
+    getMyGroups 
 }

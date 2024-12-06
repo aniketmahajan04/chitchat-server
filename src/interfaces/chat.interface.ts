@@ -1,10 +1,8 @@
 
-import { User } from "../interfaces/user.interface"
-
 export interface Chat {
     _id: string;
     name: string;
-    members: User[];
+    members: Member[];
     groupChat: boolean
 };
 
@@ -14,4 +12,10 @@ export interface TransformedChat {
     avatar: string[];
     name: string;
     members: string[];
+};
+
+export interface Member {
+    _id: string
+    avatar: {url: string};
+    name: string;
 }
