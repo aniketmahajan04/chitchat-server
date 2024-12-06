@@ -1,8 +1,8 @@
-import { User } from "../interfaces/user.interface"
+import { Member } from "../interfaces/chat.interface";
 
 export const getOtherMember = (
-    members: User[],
+    members: Member[],
     userId: string
-): User | undefined => {
+): Member | undefined => {
    return members.find((member) => { member._id.toString() !== userId.toString() })
 };

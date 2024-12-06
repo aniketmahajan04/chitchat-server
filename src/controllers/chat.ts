@@ -181,9 +181,64 @@ const getMyGroups = async (req: AuthenticatedRequest, res: Response): Promise<vo
     }
 };
 
+const addMember = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const {  chatId, memberId } = req.body;
+    const userId = req.userId;
+
+    if(!chatId || !memberId) {
+        res.status(400).json({
+            mag: "Chat Id and Member Id are required"
+        });
+        return;
+    }
+
+    try{
+
+        const chat = await ChatModel.findById( chatId )
+
+        if(!chat) {
+            res.status(404).json({
+                msg: "Chat not found"
+            });
+            return;
+        }
+
+        if(chat.creator.toString() !== userId?.toString()) {
+            res.status(403).json({
+                success: false,
+                msg: "You are not authorized to add members in group"
+            });
+            return;
+        }
+
+        if(chat.members.includes(memberId)) {
+            res.status(400).json({
+                success: false,
+                msg: "User already member of group"
+            });
+            return;
+        }
+
+        chat.members.push(memberId);
+        await chat.save();
+
+        res.status(200).json({
+            success: true,
+            mag: "Member added successfully"
+        })
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
     getMyChats,
-    getMyGroups 
+    getMyGroups,
+    addMember
 }
