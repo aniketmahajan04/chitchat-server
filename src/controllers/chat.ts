@@ -4,6 +4,7 @@ import { AuthenticatedRequest } from "../middlewares/auth";
 import { UserModel } from "../models/user";
 import { getOtherMember } from "../lib/helper";
 import { Chat, Member, TransformedChat } from "../interfaces/chat.interface";
+import { Types } from "mongoose";
 
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -235,10 +236,118 @@ const addMember = async (req: AuthenticatedRequest, res: Response): Promise<void
     }
 };
 
+const removeMember = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const { chatId, userId } = req.body;
+    if(!chatId || !userId) {
+        res.status(400).json({ msg: "Chat Id and Member Id required" });
+        return;
+    }
+
+    try{
+        const [chat, userThatWillBeRemovable] = await Promise.all([
+            ChatModel.findById(chatId),
+            UserModel.findById(userId, "name")
+        ]);
+
+        if(!chat){
+            res.status(404).json({ msg: "Chat not found" });
+            return;
+        }
+
+        if(!chat.groupChat) {
+            res.status(400).json({ msg: "This is not groupchat" });
+            return;
+        }
+
+        if(chat.creator.toString() !== req.userId?.toString()){
+            res.status(403).json({
+                msg: "You are not allowed to remove members"
+            });
+            return;
+        }
+
+        if(chat.creator.toString() === req.userId?.toString()) {
+            res.status(403).json({
+                msg: "The creator cannot remove themselves from the group"
+            });
+            return;
+        }
+
+        if(chat.members.length <= 3){
+            res.status(400).json({ msg: "Group at least have 3 three members" });
+            return;
+        }
+        const allChatMember = chat.members.map((i: Types.ObjectId) => i.toString());
+
+        chat.members = chat.members.filter(
+            (member: Types.ObjectId) => member.toString() !== userId.toString()
+        );
+
+        chat.save();
+        res.status(200).json({
+            success: true,
+            msg: "Member removed successfully"
+        });
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
+const leaveGroup = async(req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const chatId = req.params.id;
+    try{
+        const chat = await ChatModel.findById(chatId);
+        if(!chat) {
+            res.status(404).json({ msg: "Chat not found" });
+            return;
+        }
+        if(!chat.groupChat){
+            res.status(400).json({ msgg: "This is not group chat" });
+            return;
+        }
+
+        const remainingMembers = chat.members.filter(
+            (member: Types.ObjectId) => member.toString() !== req.userId?.toString()
+        );
+
+        if(chat.members.length <= 3){
+            res.status(400).json({ msg: "Group at least have 3 three members" });
+            return;
+        }
+
+        if(chat.creator.toString() === req.userId?.toString()) {
+            res.status(403).json({
+                msg: "The creator cannot remove themselves from the group"
+            });
+            return;
+        }
+
+        chat.members = remainingMembers;
+        chat.save();
+
+        res.status(200).json({
+            success: true,
+            msg: "Group leaved successfully"
+        })
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
     getMyChats,
     getMyGroups,
-    addMember
+    addMember,
+    removeMember,
+    leaveGroup
 }

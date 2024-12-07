@@ -4,7 +4,9 @@ import {
     newGroupChat,
     getMyChats,
     getMyGroups,
-    addMember
+    addMember,
+    removeMember,
+    leaveGroup
 } from "../controllers/chat"
 
 import { auth } from "../middlewares/auth";
@@ -18,5 +20,7 @@ chatRouter.post("/newgroupchat", newGroupChat);
 chatRouter.get("/getmychats", getMyChats);
 chatRouter.get("/getmygroups", getMyGroups);
 chatRouter.put("/addmember", addMember);
+chatRouter.put("/removemember", removeMember);
+chatRouter.delete("/leavegroup/:id", leaveGroup);
 
 export default chatRouter;
