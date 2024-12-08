@@ -5,6 +5,9 @@ import { UserModel } from "../models/user";
 import { getOtherMember } from "../lib/helper";
 import { Chat, Member, TransformedChat } from "../interfaces/chat.interface";
 import { Types } from "mongoose";
+import multer from "multer";
+import { MessageModel } from "../models/message";
+import { attachments } from "../middlewares/multer";
 
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -342,6 +345,61 @@ const leaveGroup = async(req: AuthenticatedRequest, res: Response): Promise<void
     }
 };
 
+const sendAttachment = async (req: AuthenticatedRequest, res :Response): Promise<void> => {
+    try{
+        const { chatId } = req.body;
+        const files = req.files as Express.Multer.File[];
+        if (!chatId) {
+            res.status(400).json({ msg: "Chat ID is required." });
+            return;
+        }
+
+         if(!files || files.length === 0){
+            res.status(400).json({ msg: "No files were uploaded." });
+            return;
+         }
+
+         if(files.length > 5){
+            res.status(400).json({ msg: "Cannot upload more than 5 files" });
+            return;
+         }
+         
+        const [chat, me] = await Promise.all([
+            ChatModel.findById(chatId),
+            UserModel.findById(req.userId),
+        ]);
+
+        if(!chat || !me) {
+            res.status(404).json({ 
+                msg: "Chat Id or User Id not found"
+            });
+            return;
+        }
+
+        const attachments = files.map((file) => ({
+            public_id: file.filename,
+            url: `${req.protocol}://${req.get("host")}/uploads/${file.filename}`,
+        }));
+
+        const message = await MessageModel.create({
+            content: "",
+            attachments: attachments,
+            sender: me._id,
+            chat: chat._id
+        });
+        res.status(201).json({
+            msg: "Attachment send successfully",
+            message
+        });
+
+    } catch(error){
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
@@ -349,5 +407,6 @@ export {
     getMyGroups,
     addMember,
     removeMember,
-    leaveGroup
+    leaveGroup,
+    sendAttachment
 }

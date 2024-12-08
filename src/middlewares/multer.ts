@@ -11,8 +11,8 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const destnarionPath = "./uploads";
-        cb(null, destnarionPath);
+        const destinationPath = "./uploads";
+        cb(null, destinationPath);
     },
     filename: function (req, file, cb) {
         const timeStamp = Date.now();

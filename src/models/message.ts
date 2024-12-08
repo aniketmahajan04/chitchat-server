@@ -3,9 +3,11 @@ import { Schema, model, models, Types } from "mongoose";
 
 const messageSchema = new Schema({
     
-    content: String,
+    content: {
+        type: String,
+    },
 
-    attachment: [
+    attachments: [
         {
             public_id: {
                 type: String,
@@ -14,6 +16,12 @@ const messageSchema = new Schema({
             url: {
                 type: String,
                 required: true,
+            },
+            mimetype: {
+                type: String,
+            },
+            size: {
+                type: Number
             }
         },
     ],
