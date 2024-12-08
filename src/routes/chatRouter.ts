@@ -10,7 +10,8 @@ import {
     sendAttachment,
     getChatDetails,
     renameGroup,
-    deleteChat
+    deleteChat,
+    getMessages
 } from "../controllers/chat"
 import { auth } from "../middlewares/auth";
 import { attachments } from "../middlewares/multer";
@@ -30,5 +31,6 @@ chatRouter.post("/send-attachment", attachments, sendAttachment);
 chatRouter.get("/chatdetailes/:id", getChatDetails);
 chatRouter.put("/renamegroup/:id", renameGroup);
 chatRouter.delete("/deletechat/:id", deleteChat);
+chatRouter.get("/messages/:id", getMessages);
 
 export default chatRouter;

@@ -7,6 +7,7 @@ import { Chat, ChatDetailedMember, Member, TransformedChat } from "../interfaces
 import { Types } from "mongoose";
 import { MessageModel } from "../models/message";
 import { avatar } from "../middlewares/multer";
+import { date } from "zod";
 
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -535,6 +536,59 @@ const deleteChat = async (req: AuthenticatedRequest, res: Response): Promise<voi
     }
 };
 
+const getMessages = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const chatId = req.params.id;
+    const userId = req.userId;
+    const page = parseInt(req.query.page as string) || 1;
+    const resultPerPage = 20;
+    const skipPage = ( page as number - 1 ) * resultPerPage;
+    try{
+        if(!userId) {
+            res.status(403).json({
+                msg: "Unauthorized"
+            });
+            return;
+        }
+        if(!chatId){
+            res.status(400).json({ msg: "Chat Id is not provided" });
+            return;
+        }
+        const chat = await ChatModel.findById(chatId);
+        if(!chat) {
+            res.status(404).json({
+                msg: "Chat not found"
+            });
+            return;
+        }
+        if(!chat.members.includes(userId)) {
+            res.status(403).json({ msg: "You are not allowed to access this chat" });
+            return;
+        }
+
+        const [message, totalMessageCount] = await Promise.all([
+            MessageModel.find({ chat: chatId })
+                .sort({ createdAt: - 1 })
+                .skip(skipPage)
+                .limit(resultPerPage)
+                .populate("sender", "name")
+                .lean(),
+            MessageModel.countDocuments({ chat: chatId }),
+        ]);
+
+        const totalPages = Math.ceil(totalMessageCount / resultPerPage) || 0;
+        res.status(200).json({
+            success: true,
+            message: message.reverse(),
+            totalPages,
+        });
+    }  catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
@@ -546,5 +600,6 @@ export {
     sendAttachment,
     getChatDetails,
     renameGroup,
-    deleteChat
+    deleteChat,
+    getMessages
 }
