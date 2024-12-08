@@ -496,6 +496,45 @@ const renameGroup = async (req: AuthenticatedRequest, res: Response): Promise<vo
     }
 };
 
+const deleteChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const chatId = req.params.id;
+    const userId = req.userId;
+    if(!userId) {
+        res.status(400).json({ msg: "Unauthorized" });
+        return;
+    }
+    if(!chatId) {
+        res.status(400).json({ msg : "Please provide chat Id" });
+        return;
+    }
+    try{
+        const chat = await ChatModel.findById(chatId);
+        if(!chat){
+            res.status(404).json({ msg: "Chat not found" });
+            return;
+        }
+
+        if(!chat.members.includes(userId)){
+            res.status(403).json({ msg: "You are not allowed to delete this chat" });
+            return;
+        }
+
+        await Promise.all([
+            chat.deleteOne(),
+            MessageModel.deleteMany({ chat: chatId })
+        ]);
+        res.status(200).json({
+            success: true,
+            msg: "Chat deleted successfully",
+        })
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
@@ -506,5 +545,6 @@ export {
     leaveGroup,
     sendAttachment,
     getChatDetails,
-    renameGroup
+    renameGroup,
+    deleteChat
 }
