@@ -18,4 +18,10 @@ export interface Member {
     _id: string
     avatar: {url: string};
     name: string;
-}
+};
+
+export interface ChatDetailedMember {
+    _id: string;
+    name: string;
+    avatar: string;
+};

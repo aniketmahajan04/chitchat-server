@@ -3,11 +3,10 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { UserModel } from "../models/user";
 import { getOtherMember } from "../lib/helper";
-import { Chat, Member, TransformedChat } from "../interfaces/chat.interface";
+import { Chat, ChatDetailedMember, Member, TransformedChat } from "../interfaces/chat.interface";
 import { Types } from "mongoose";
-import multer from "multer";
 import { MessageModel } from "../models/message";
-import { attachments } from "../middlewares/multer";
+import { avatar } from "../middlewares/multer";
 
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -400,6 +399,103 @@ const sendAttachment = async (req: AuthenticatedRequest, res :Response): Promise
     }
 };
 
+const getChatDetails = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try{
+        const userId = req.userId;
+        const chatId = req.params.id;
+        if(!userId){
+            res.status(400).json({
+                msg: "Unauthorized"
+            });
+            return;
+        }
+        if(!chatId){
+            res.status(400).json({
+                mag: "Chat Id required"
+            });
+            return;
+        }
+        const chat = await ChatModel.findById(chatId)
+        .populate<{ members: ChatDetailedMember[] }>("members", "name avatar");
+
+        if(!chat){
+            res.status(404).json({
+                msg: "Chat not found!"
+            }); 
+            return;
+        }
+
+        chat.members = chat.members.map((member: ChatDetailedMember) => ({
+            _id: member._id,
+            name: member.name,
+            avatar: member.avatar
+        }));
+        res.status(200).json({
+            success: true,
+            chat,
+        })
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
+const renameGroup = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const chatId = req.params.id;
+    const { name } = req.body;
+    const userId = req.userId;
+
+    if(!userId){
+        res.status(400).json({
+            msg: "Unauthorized"
+        });
+        return;
+    }
+    if(!chatId || !name) {
+        res.status(400).json({
+            msg: "Chat Id or Name not provided"
+        })
+    }
+    try{
+
+        const chat = await ChatModel.findById(chatId);
+        if(!chat) {
+            res.status(404).json({
+                msg: "Chat not found"
+            });
+            return;
+        }
+
+        if(!chat.groupChat) {
+            res.status(400).json({
+                msg: "This is not group chat"
+            });
+            return;
+        }
+        if(chat.creator.toString() !== userId.toString()){
+            res.status(403).json({
+                msg: "You are not allowed to rename group"
+            });
+            return;
+        }
+        chat.name = name;
+        await chat.save();
+
+        res.status(201).json({
+            success: true,
+            msg: "Group rename successfully"
+        });
+
+    } catch(error){
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newChat,
     newGroupChat,
@@ -408,5 +504,7 @@ export {
     addMember,
     removeMember,
     leaveGroup,
-    sendAttachment
+    sendAttachment,
+    getChatDetails,
+    renameGroup
 }

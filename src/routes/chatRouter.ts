@@ -7,7 +7,9 @@ import {
     addMember,
     removeMember,
     leaveGroup,
-    sendAttachment
+    sendAttachment,
+    getChatDetails,
+    renameGroup
 } from "../controllers/chat"
 import { auth } from "../middlewares/auth";
 import { attachments } from "../middlewares/multer";
@@ -24,5 +26,7 @@ chatRouter.put("/addmember", addMember);
 chatRouter.put("/removemember", removeMember);
 chatRouter.delete("/leavegroup/:id", leaveGroup);
 chatRouter.post("/send-attachment", attachments, sendAttachment);
+chatRouter.get("/chatdetailes/:id", getChatDetails);
+chatRouter.put("/renamegroup/:id", renameGroup);
 
 export default chatRouter;
