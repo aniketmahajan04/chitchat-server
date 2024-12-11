@@ -6,6 +6,7 @@ import {
     logout,
     getMyProfile,
     userSearch,
+    sendFriendRequest,
 } from "../controllers/user";
 import { auth } from "../middlewares/auth";
 import { zodValidation } from "../middlewares/zod";
@@ -23,5 +24,9 @@ userRouter.put("/updatedetails", updateDetails);
 userRouter.delete("/logout", logout);
 userRouter.get("/getmyprofile", getMyProfile);
 userRouter.get("/search", userSearch);
+
+// Request routes
+
+userRouter.post("/sent-request", sendFriendRequest);
 
 export default userRouter;

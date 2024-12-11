@@ -4,6 +4,7 @@ import { Request, Response } from "express"
 import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
 import { AuthenticatedRequest } from "../middlewares/auth";
+import { RequestModel } from "../models/request";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -204,6 +205,68 @@ const userSearch = async (req: AuthenticatedRequest, res: Response): Promise<voi
 
 };
 
+const sendFriendRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.userId;
+    const { receiverId } = req.body;
+
+    try{
+        if(!userId){
+            res.status(403).json({
+                msg: "Unauthorized"
+            });
+            return;
+        }
+
+        if(!receiverId){
+            res.status(400).json({ msg: "Please provide receiver Id" });
+            return;
+        }
+
+        if (userId === receiverId) {
+            res.status(400).json({ success: false, msg: "You cannot send a friend request to yourself" });
+            return;
+        }
+
+        const receiver = await UserModel.findById(receiverId);
+        if(!receiver){
+            res.status(404).json({ msg: "Receiver not found" });
+            return;
+        }
+
+        const existingRequest = await RequestModel.findOne({
+            $or: [
+                { sender: userId, receiver: receiverId },
+                { sender: receiverId, receiver: userId }
+            ],
+        });
+
+        if(existingRequest){
+            res.status(400).json({ 
+                success: false,
+                msg: "A friend request already exists" });
+            return;
+        }
+        
+        const requestSend = await RequestModel.create({
+            sender: userId,
+            receiver: receiverId
+        });
+
+        res.status(201).json({
+            success: true,
+            msg: "Request sent successfully",
+            requestSend
+        });
+        
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            success: false,
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newUser,
     login,
@@ -211,4 +274,5 @@ export {
     getMyProfile,
     logout,
     userSearch,
+    sendFriendRequest
 }
