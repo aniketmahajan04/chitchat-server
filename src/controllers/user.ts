@@ -5,6 +5,7 @@ import { UserModel } from "../models/user"
 import { JWT_USER_PASSWORD } from "../config/config";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { RequestModel } from "../models/request";
+import { ChatModel } from "../models/chat";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -267,6 +268,89 @@ const sendFriendRequest = async (req: AuthenticatedRequest, res: Response): Prom
     }
 };
 
+const acceptFriendRequest = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.userId;
+    const { requestId, accept } = req.body;
+    try{
+        if(!userId){
+            res.status(403).json({
+                msg: "Unauthorized"
+            });
+            return;
+        }
+        if(!requestId){
+            res.status(400).json({
+                msg: "Please provide requestId"
+            });
+            return;
+        }
+
+        if (typeof accept !== "boolean") {
+            res.status(400).json({ msg: "Invalid 'accept' value. Must be true or false." });
+            return;
+        }
+
+        const request = await RequestModel.findById(requestId)
+            .populate("sender", "name")
+            .populate("receiver", "name");
+
+        if(!request){
+            res.status(404).json({ msg: "Request not found" });
+            return;
+        }
+
+        if(request.receiver._id.toString() !== userId.toString()){
+            res.status(403).json({
+                msg: "You are not authorized to accept this request"
+            });
+            return;
+        }
+
+        if(!accept){
+            await request.deleteOne();
+
+            res.status(200).json({
+                success: true,
+                msg: "Friend Request Rejected",
+            });
+            return;
+        }
+        const members = [request.sender._id, request.receiver._id];
+
+        const existingChat = await ChatModel.findOne({ members: { $all: members } });
+        if(existingChat){
+            await request.deleteOne();
+            res.status(200).json({
+                success: true,
+                msg: "Friend request accepted (chat already exists)",
+                sender: request.sender._id,
+            });
+            return;
+        }
+
+        await Promise.all([
+            ChatModel.create({
+                members,
+                name: `${request.sender.name}-${request.receiver.name}`
+            }),
+            request.deleteOne(),
+        ]);
+
+        res.status(200).json({
+            success: true,
+            msg: "Friend request accepted",
+            senderId: request.sender._id
+        });
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            success: false,
+            msg: "Internal server error"
+        });
+    }
+};
+
 export {
     newUser,
     login,
@@ -274,5 +358,6 @@ export {
     getMyProfile,
     logout,
     userSearch,
-    sendFriendRequest
+    sendFriendRequest,
+    acceptFriendRequest
 }

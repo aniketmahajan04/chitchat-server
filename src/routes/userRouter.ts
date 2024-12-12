@@ -7,6 +7,7 @@ import {
     getMyProfile,
     userSearch,
     sendFriendRequest,
+    acceptFriendRequest,
 } from "../controllers/user";
 import { auth } from "../middlewares/auth";
 import { zodValidation } from "../middlewares/zod";
@@ -28,5 +29,6 @@ userRouter.get("/search", userSearch);
 // Request routes
 
 userRouter.post("/sent-request", sendFriendRequest);
+userRouter.post("/acceptrequest", acceptFriendRequest);
 
 export default userRouter;
