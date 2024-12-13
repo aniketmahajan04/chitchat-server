@@ -9,6 +9,7 @@ import {
     sendFriendRequest,
     acceptFriendRequest,
     getMyNotification,
+    getMyFriends,
 } from "../controllers/user";
 import { auth } from "../middlewares/auth";
 import { zodValidation } from "../middlewares/zod";
@@ -32,5 +33,6 @@ userRouter.get("/search", userSearch);
 userRouter.post("/sent-request", sendFriendRequest);
 userRouter.post("/acceptrequest", acceptFriendRequest);
 userRouter.get("/notifications", getMyNotification);
+userRouter.get("/friends", getMyFriends);
 
 export default userRouter;

@@ -17,7 +17,7 @@ export interface TransformedChat {
 export interface Member {
     _id: string
     avatar: {url: string};
-    name: string;
+    username: string;
 };
 
 export interface ChatDetailedMember {
@@ -33,4 +33,10 @@ export interface Notification {
         name: string,
         avatar: string ,
     }
+};
+
+export interface Friends {
+    _id: string;
+    name: string | undefined;
+    avatar: string | undefined;
 };

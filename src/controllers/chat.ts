@@ -131,7 +131,7 @@ const getMyChats = async (req: AuthenticatedRequest, res: Response): Promise<voi
                 avatar: groupChat
                     ? members.slice(0, 3).map(({ avatar }) => avatar.url)
                     : [otherMember?.avatar.url || ""],
-                name: groupChat ? name : otherMember?.name || "Unknown",
+                name: groupChat ? name : otherMember?.username || "Unknown",
                 members: members.reduce<string[]>((prev, curr) => {
                     if(curr._id.toString() !== userId.toString()){
                         prev.push(curr._id);

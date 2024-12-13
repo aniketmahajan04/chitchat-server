@@ -6,7 +6,7 @@ import { JWT_USER_PASSWORD } from "../config/config";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { RequestModel } from "../models/request";
 import { ChatModel } from "../models/chat";
-import { Notification } from "../interfaces/chat.interface";
+import { Notification, Friends } from "../interfaces/chat.interface";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -400,7 +400,64 @@ const getMyNotification = async (req: AuthenticatedRequest, res: Response): Prom
 };
 
 const getMyFriends = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    
+    const userId = req.userId;
+    const chatId = req.query.chatId;
+
+    if(!userId) {
+        res.status(403).json({
+            msg: "Unauthorized"
+        });
+        return;
+    }
+
+    try{
+
+        const chats = await ChatModel.find({
+            members: userId,
+            groupChat: false,
+        }).populate(
+            "members",
+            "username avatar"
+        );
+
+        const friends: Friends[] = chats.map(({members}) => {
+            const otherUser = members.find(
+                (member: any) => member._id.toString() !== userId.toString()
+            )
+            
+            return (
+                otherUser && {
+                    _id: otherUser._id.toString(),
+                    name: otherUser.username,
+                    avatar: otherUser.avatar?.url || null,
+                }
+            )
+        }).filter((friend): friend is Friends => friend !== null);
+
+        if(chatId){
+            const chat = await ChatModel.findById(chatId);
+            const availabelFriends = friends.filter(
+                (friend) => !chat.members.some((memberId: any) => memberId.toString() === friend._id)
+            );
+
+            res.status(200).json({
+                success: true,
+                friends: availabelFriends,
+            });
+        } else {
+            res.status(200).json({
+                success: true,
+                friends,
+            });
+        }
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            success: false,
+            msg: "Internal server error"
+        });
+    }
 };
 
 export {
