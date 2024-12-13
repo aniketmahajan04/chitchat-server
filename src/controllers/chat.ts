@@ -6,9 +6,6 @@ import { getOtherMember } from "../lib/helper";
 import { Chat, ChatDetailedMember, Member, TransformedChat } from "../interfaces/chat.interface";
 import { Types } from "mongoose";
 import { MessageModel } from "../models/message";
-import { avatar } from "../middlewares/multer";
-import { date } from "zod";
-
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
@@ -42,7 +39,7 @@ const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> 
 
         const existingChat = await ChatModel.findOne({
             groupChat: false,
-            member: { $all: [userId, otherUserId] }
+            members: { $all: [userId, otherUserId] }
         })
         if(existingChat) {
             res.status(200).json({
@@ -53,10 +50,10 @@ const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> 
         }
 
         await ChatModel.create({
-            name: "One-to-One Chat",
+            name: otherUser.username,
             groupChat: false,
             creator: userId,
-            member: [userId, otherUserId]
+            members: [userId, otherUserId]
         });
 
         res.status(201).json({

@@ -6,6 +6,7 @@ import { JWT_USER_PASSWORD } from "../config/config";
 import { AuthenticatedRequest } from "../middlewares/auth";
 import { RequestModel } from "../models/request";
 import { ChatModel } from "../models/chat";
+import { Notification } from "../interfaces/chat.interface";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -351,6 +352,57 @@ const acceptFriendRequest = async (req: AuthenticatedRequest, res: Response): Pr
     }
 };
 
+const getMyNotification = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.userId;
+
+    if(!userId){
+        res.status(403).json({
+            msg: "Unauthorized"
+        });
+        return;
+    }
+
+    try{
+        const requests = await RequestModel.find({ receiver: userId })
+            .populate(
+                "sender",
+                "username avatar"
+            );
+
+        if(!requests || requests.length === 0){
+            res.status(404).json({
+                msg: "No Notification found"
+            });
+            return;
+        }
+
+        const allRequests: Notification[] = requests.map(({_id, sender}) => ({
+            _id,
+            sender: {
+                _id: sender._id,
+                name: sender.username, 
+                avatar: sender.avatar?.url || null,
+            }
+        }));
+
+        res.status(200).json({
+            success: true,
+            allRequests
+        });
+
+    } catch(error) {
+        console.error("Something went wrong", error);
+        res.status(500).json({
+            success: false,
+            msg: "Internal server error"
+        });
+    }
+};
+
+const getMyFriends = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    
+};
+
 export {
     newUser,
     login,
@@ -359,5 +411,7 @@ export {
     logout,
     userSearch,
     sendFriendRequest,
-    acceptFriendRequest
+    acceptFriendRequest,
+    getMyNotification,
+    getMyFriends
 }

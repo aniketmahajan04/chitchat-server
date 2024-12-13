@@ -25,3 +25,12 @@ export interface ChatDetailedMember {
     name: string;
     avatar: string;
 };
+
+export interface Notification {
+    _id: string;
+    sender: {
+        _id: string,
+        name: string,
+        avatar: string ,
+    }
+};
