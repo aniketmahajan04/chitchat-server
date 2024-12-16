@@ -69,7 +69,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
             }, JWT_USER_PASSWORD);
 
             res.cookie(
-                'token', token, {
+                'chitchat-token', token, {
                     httpOnly: true,
                     secure: req.secure || false,
                     maxAge: 60 * 60 * 1000 
