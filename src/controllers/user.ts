@@ -68,8 +68,10 @@ const login = async (req: Request, res: Response): Promise<void> => {
                 id: foundUser._id 
             }, JWT_USER_PASSWORD);
 
+            res.setHeader('Authorization', `Bearer ${token}`);
+
             res.cookie(
-                'chitchat-token', token, {
+                'token', token, {
                     httpOnly: true,
                     secure: req.secure || false,
                     maxAge: 60 * 60 * 1000 
@@ -77,7 +79,7 @@ const login = async (req: Request, res: Response): Promise<void> => {
 
             res.status(200).json({ msg: "Login successfully" });
         } else {
-            res.status(400).json({ msg: "User not foung!" });
+            res.status(400).json({ msg: "User not found!" });
         }
     } catch(error) {
         console.error("Something went wrong", error);
