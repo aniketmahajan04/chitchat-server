@@ -7,6 +7,7 @@ import { AuthenticatedRequest } from "../middlewares/auth";
 import { RequestModel } from "../models/request";
 import { ChatModel } from "../models/chat";
 import { Notification, Friends } from "../interfaces/chat.interface";
+import { emitEvent } from "../utils/webSocket";
 
 const newUser = async (req: Request, res: Response): Promise<void> => {
 
@@ -254,6 +255,13 @@ const sendFriendRequest = async (req: AuthenticatedRequest, res: Response): Prom
         const requestSend = await RequestModel.create({
             sender: userId,
             receiver: receiverId
+        });
+
+        emitEvent(receiverId, "FRIEND_REQUEST", {
+            sender: {
+                id: userId
+            },
+            requestId: receiverId
         });
 
         res.status(201).json({
