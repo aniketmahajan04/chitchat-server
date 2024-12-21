@@ -3,6 +3,13 @@ import { WebSocketServer } from "ws";
 import { authenticateWebSocket } from "../middlewares/auth";
 import { ChatModel } from "../models/chat";
 import { MessageModel } from "../models/message";
+import {
+    NEW_MESSAGE,
+    SEND_MESSAGE,
+    USER_CONNECTED,
+    USER_TYPING,
+    USER_STOP_TYPING
+} from "../constants/event";
 
 export const setUpWebSocketServer = (wss: WebSocketServer) => {
     wss.on("connection", (socket, req) => {
@@ -35,7 +42,7 @@ export const setUpWebSocketServer = (wss: WebSocketServer) => {
                                 memberSocket.forEach((socket) => {
                                     socket.send(
                                         JSON.stringify({
-                                            type: "USER_CONNECTED",
+                                            type: USER_CONNECTED,
                                             payload: { userId, username, groupId },
                                         })
                                     )
@@ -52,8 +59,60 @@ export const setUpWebSocketServer = (wss: WebSocketServer) => {
         socket.on("message", async (data) => {
             try {
                 const { type, payload } = JSON.parse(data.toString());
+
+                if(type === "TYPING") {
+                    const { chatId } = payload;
+                    const chat = await ChatModel.findById(chatId);
+                    if(chat){
+                        chat.members.forEach((member: any) => {
+                            if(member.id.toString() !== userId) {
+                                const userSocket = connecteUsers[member.toString()];
+                                if(userSocket) {
+                                    userSocket.forEach((socket) => {
+                                        socket.send(
+                                            JSON.stringify({
+                                                type: USER_TYPING,
+                                                payload: {
+                                                    userId,
+                                                    username,
+                                                    chatId, 
+                                                }
+                                            })
+                                        )
+                                    })
+                                }
+                            }
+                        })
+                    }
+                }
+
+                if(type === "STOP_TYPING") {
+                    const { chatId } = payload;
+                    const chat = await ChatModel.findById(chatId);
+                    if(chat){
+                        chat.members.forEach((member: any) => {
+                            if(member.id.toString() !== userId) {
+                                const userSocket = connecteUsers[member.id.toString()];
+                                if(userSocket) {
+                                    userSocket.forEach((socket) => {
+                                        socket.send(
+                                            JSON.stringify({
+                                                type: USER_STOP_TYPING,
+                                                payload: {
+                                                    userId,
+                                                    username,
+                                                    chatId,
+                                                }
+                                            })
+                                        );
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
     
-                if(type === "SEND_MESSAGE") {
+                if(type === SEND_MESSAGE) {
                     const { content, attachments, chatId } = payload;
                     
                     const chat = await ChatModel.findById(chatId).populate("members");
@@ -63,10 +122,15 @@ export const setUpWebSocketServer = (wss: WebSocketServer) => {
                         );
                     return;
                     }
+
+                    const savedAttachments = attachments.map((attachment: any) => ({
+                        public_id: attachment.filename,
+                        url: attachment.url,
+                    }))
     
                     const message = await MessageModel.create({
                         content,
-                        attachments,
+                        attachments: savedAttachments,
                         sender: userId,
                         chat: chatId,
                     });
@@ -77,7 +141,7 @@ export const setUpWebSocketServer = (wss: WebSocketServer) => {
                             userSocket.forEach((socket) => {
                                 socket.send(
                                     JSON.stringify({
-                                        type: "NEW_MESSAGE",
+                                        type: NEW_MESSAGE,
                                         payload: {
                                             message: {
                                                 _id: message._id,
@@ -95,6 +159,7 @@ export const setUpWebSocketServer = (wss: WebSocketServer) => {
                     });
     
                 } 
+                
             } catch(error) {
                 console.error("Error handling message: ", error);
                 socket.send(

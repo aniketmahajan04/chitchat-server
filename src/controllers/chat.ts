@@ -6,6 +6,10 @@ import { getOtherMember } from "../lib/helper";
 import { Chat, ChatDetailedMember, Member, TransformedChat } from "../interfaces/chat.interface";
 import { Types } from "mongoose";
 import { MessageModel } from "../models/message";
+import { emitEvent } from "../utils/webSocket";
+import { ALERT,
+        NEW_MESSAGE,
+        } from "../constants/event";
 
 const newChat = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     const userId = req.userId;
@@ -220,8 +224,26 @@ const addMember = async (req: AuthenticatedRequest, res: Response): Promise<void
             return;
         }
 
+        const member = await UserModel.findById(memberId).select("name");
+        if(!member) {
+            res.status(400).json({
+                msg: "Invalid member id"
+            })
+            return;
+        }
+
         chat.members.push(memberId);
         await chat.save();
+
+        chat.members.forEach((existingMemberId: Types.ObjectId) => {
+            if(existingMemberId.toString() !== memberId.toString()){
+                emitEvent(existingMemberId.toString(), ALERT, {
+                    message: `${member.name} added to group ${chat.name}`,
+                    chatId,
+                    addedBy: userId
+                })
+            }
+        })
 
         res.status(200).json({
             success: true,
@@ -266,7 +288,7 @@ const removeMember = async (req: AuthenticatedRequest, res: Response): Promise<v
             return;
         }
 
-        if(chat.creator.toString() === req.userId?.toString()) {
+        if(userId === chat.creator.toString()) {
             res.status(403).json({
                 msg: "The creator cannot remove themselves from the group"
             });
@@ -277,13 +299,34 @@ const removeMember = async (req: AuthenticatedRequest, res: Response): Promise<v
             res.status(400).json({ msg: "Group at least have 3 three members" });
             return;
         }
-        const allChatMember = chat.members.map((i: Types.ObjectId) => i.toString());
-
-        chat.members = chat.members.filter(
-            (member: Types.ObjectId) => member.toString() !== userId.toString()
+        // const allChatMember = chat.members.map((i: Types.ObjectId) => i.toString());
+        const isMember = chat.members.some(
+            (member: Types.ObjectId) => member.toString() === userId.toString() 
         );
 
-        chat.save();
+        if(!isMember) {
+            res.status(400).json({ msg: "You are not a member of this group" });
+            return;
+        }
+
+        // chat.members = chat.members.filter(
+        //     (member: Types.ObjectId) => member.toString() !== userId.toString()
+        // );
+
+        await chat.findByIdAndUpdate(chatId, {
+            $pull: { members: userId}
+        });
+
+        chat.members.forEach((existingMemberId: Types.ObjectId) => {
+            if(existingMemberId.toString() !== userId.toString()){
+                emitEvent(existingMemberId.toString(), ALERT, {
+                    message: `${userThatWillBeRemovable.name} removed from group ${chat.name}`,
+                    chatId,
+                    removedBy: userId
+                })
+            }
+        })
+        
         res.status(200).json({
             success: true,
             msg: "Member removed successfully"
@@ -310,15 +353,6 @@ const leaveGroup = async(req: AuthenticatedRequest, res: Response): Promise<void
             return;
         }
 
-        const remainingMembers = chat.members.filter(
-            (member: Types.ObjectId) => member.toString() !== req.userId?.toString()
-        );
-
-        if(chat.members.length <= 3){
-            res.status(400).json({ msg: "Group at least have 3 three members" });
-            return;
-        }
-
         if(chat.creator.toString() === req.userId?.toString()) {
             res.status(403).json({
                 msg: "The creator cannot remove themselves from the group"
@@ -326,13 +360,32 @@ const leaveGroup = async(req: AuthenticatedRequest, res: Response): Promise<void
             return;
         }
 
+        const remainingMembers = chat.members.filter(
+            (member: Types.ObjectId) => member.toString() !== req.userId?.toString()
+        );
+
         chat.members = remainingMembers;
-        chat.save();
+
+        const [user] = await Promise.all([
+            UserModel.findById(req.userId, "name"),
+            chat.save()
+        ]);
+        if(!user) {
+            res.status(404).json({ msg: "User not found" });
+            return;
+        }   
+
+        chat.members.forEach((member: Types.ObjectId) => {
+            emitEvent(member.toString(), ALERT, {
+                message: `${user?.name} left the group ${chat.name}`,
+                chatId,
+            })
+        })
 
         res.status(200).json({
             success: true,
-            msg: "Group leaved successfully"
-        })
+            msg: "You have left the group successfully"
+        });
 
     } catch(error) {
         console.error("Something went wrong", error);
@@ -384,6 +437,21 @@ const sendAttachment = async (req: AuthenticatedRequest, res :Response): Promise
             sender: me._id,
             chat: chat._id
         });
+
+        chat.members.forEach((member: any) => {
+            if(member.toString() !== req.userId?.toString()){
+                emitEvent(member.id.toString(), NEW_MESSAGE, {
+                    message: {
+                        _id: message._id,
+                        content: message.content,
+                        attachments: message.attachments,
+                        sender: { _id: me._id, name: me.name },
+                        chat: chatId,
+                        createdAt: message.createdAt,
+                    }
+                })
+            }
+        })
         res.status(201).json({
             msg: "Attachment send successfully",
             message
