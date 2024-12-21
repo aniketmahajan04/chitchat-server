@@ -15,13 +15,15 @@ import {
 } from "../controllers/chat"
 import { auth } from "../middlewares/auth";
 import { attachments } from "../middlewares/multer";
+import { zodValidation } from "../middlewares/zod";
+import { newGroupSchema } from "../lib/validators";
 
 const chatRouter = Router();
 
 chatRouter.use(auth);
 
 chatRouter.post("/newchat", newChat);
-chatRouter.post("/newgroupchat", newGroupChat);
+chatRouter.post("/newgroupchat", zodValidation(newGroupSchema), newGroupChat);
 chatRouter.get("/getmychats", getMyChats);
 chatRouter.get("/getmygroups", getMyGroups);
 chatRouter.put("/addmember", addMember);
